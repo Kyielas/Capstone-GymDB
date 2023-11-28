@@ -16,11 +16,17 @@ db_anggota = [
     {'ID': 'FPT010', 'Nama': 'Sari Indah', 'Jenis Kelamin': 'Wanita', 'Berat': 58, 'Tinggi': 160, 'Nama Pelatih': 'Fitriani', 'Tanggal Registrasi': '2023-10-22'},
 ]
 
+db_anggota[2]['Nama']
+
+# Database untuk pelatih di gym
 db_pelatih = [
     {'ID': 'XPT001', 'Nama': 'Joko Santoso', 'Jenis Kelamin': 'Pria', 'email': 'joko.santoso@gmail.com', 'phone': '081234567890'},
     {'ID': 'XPT002', 'Nama': 'Rina Wijaya', 'Jenis Kelamin': 'Wanita', 'email': 'rina.wijaya@gmail.com', 'phone': '087654321098'},
     {'ID': 'XPT003', 'Nama': 'Fitriani', 'Jenis Kelamin': 'Wanita', 'email': 'fitriani24@gmail.com', 'phone': '081112223344'},
 ]
+
+# variabel untuk mengumpulkan ID yang sudah di hapus
+deleted_ids = set()
 
 def tampilkan_menu():
     print("====== DATABASE ANGGOTA GYM ======")
@@ -49,7 +55,8 @@ def tampilkan_anggota(db, nama_data):
         print("1. Menampilkan semua data")
         print("2. Mencari Data berdasarkan kolom")
         print("3. Kembali ke menu utama")
-
+#       simplified apa yang kita paham
+#       pahami kompleks nya, baru pahami simplenya
         pilihan_submenu = input("Pilih submenu (1-3): ")
 
         if pilihan_submenu == '1':
@@ -77,9 +84,13 @@ def cari_anggota(db):
     
     anggota_ditemukan = [anggota for anggota in db if anggota[kolom_pencarian] == nilai_pencarian]
 
+    for anggota in db :
+        if anggota[kolom_pencarian] == nilai_pencarian:
+            anggota = anggota_ditemukan
+
     # kondisi jika data baris yang di input tidak ada
     if not anggota_ditemukan:
-        print("Data tidak ditemukan.")
+        print("\n\033[4mData tidak ditemukan.\033[m\n")
     else:
         headers = "keys"
         print(tabulate(anggota_ditemukan, headers=headers, showindex=True, tablefmt="grid"))
@@ -94,73 +105,96 @@ def tambah_anggota(db):
         ta_submenu_pilihan = input("Pilih submenu (1/2): ")
 
         if ta_submenu_pilihan == '1':
+            
+            # Proses generate ID
+            existing_ids = {member['ID'] for member in db}
+
+            # Menggabungkan data ID yang tersedia dengan ID yang dihapus
+            all_ids = existing_ids.union(deleted_ids)
+
+            
+            max_used_id = max([int(id[3:]) for id in all_ids], default=0)
+
+            # Cek berapa id terbesar di data ID yang tersedia maupun ID yang dihapus
+            if deleted_ids:
+                max_deleted_id = max([int(id[3:]) for id in deleted_ids])
+                new_id = max(max_used_id, max_deleted_id) + 1
+            else:
+                new_id = max_used_id + 1
+
             anggota_baru = {}
 
-            ta_id_input = input("Masukkan ID (angka): ")
+            # Generate ID Baru
+            anggota_baru['ID'] = f'FPT{new_id:03d}'
             
-            if not ta_id_input.isdigit():
-                print("\n\033[4mInput ID terakhir tidak valid. Harap masukkan angka saja.\033[m\n")
-                continue
-
-            # Melakukan pengecekan duplikat data dan menaruhnya di format FPT{000}
-            existing_id = [member['ID'] for member in db]
-            id_baru = int(ta_id_input)
-            id_baru_str = str(id_baru).zfill(3)
-            id_anggota_baru = f'FPT{id_baru_str}'
-
-            if id_anggota_baru in existing_id:
+            # Validasi jika data sudah ada
+            if anggota_baru['ID'] in all_ids:
                 print("\n\033[4mData sudah ada.\033[m\n")
                 continue
 
-            anggota_baru['ID'] = id_anggota_baru
-            
-            # Memasukkan data kolom dengan kondisi
-            anggota_baru['Nama'] = input("Masukkan Nama Anggota (alfabet): ")
+            while True:
+                anggota_baru['Nama'] = input("Masukkan Nama Anggota (alfabet): ")
 
-            # Validasi nama hanya huruf saja
-            if not anggota_baru['Nama'].replace(' ','').isalpha():
-                print("\n\033[4mNama harus berupa huruf saja.\033[m\n")
-                continue
+                # Validasi nama hanya huruf saja
+                if not anggota_baru['Nama'].replace(' ', '').isalpha():
+                    print("\n\033[4mNama harus berupa huruf saja.\033[m\n")
+                    continue
 
-            jenis_kelamin_input = input("Masukkan Jenis Kelamin (Pria/Wanita): ").capitalize()
+                break
 
-            # Validasi jenis kelamin sesuai syntax
-            if jenis_kelamin_input == 'P' or jenis_kelamin_input == 'Pria':
-                anggota_baru['Jenis Kelamin'] = 'Pria'
-            elif jenis_kelamin_input == 'W' or jenis_kelamin_input == 'Wanita':
-                anggota_baru['Jenis Kelamin'] = 'Wanita'
-            else:
-                print("\n\033[4mJenis Kelamin tidak valid. Harap masukkan Pria/P atau Wanita/W.\033[m\n")
-                continue
+            while True:
+                jenis_kelamin_input = input("Masukkan Jenis Kelamin (Pria/Wanita): ").capitalize()
 
-            anggota_baru['Berat'] = input("Masukkan Berat Badan (angka): ")
-            anggota_baru['Tinggi'] = input("Masukkan Tinggi Badan (angka): ")
-            
-            # Validasi berat dan tinggi integer
-            if not anggota_baru['Berat'].isdigit() or not anggota_baru['Tinggi'].isdigit():
-                print("\n\033[4mBerat dan Tinggi harus berupa angka.\033[m\n")
-                continue
-            # Validasi berat dan tinggi realistis
-            if not (20 <= int(anggota_baru['Berat']) <= 600) or not (50 <= int(anggota_baru['Tinggi']) <= 300):
-                print("\n\033[4mBerat dan Tinggi harus berada dalam rentang realistis.\033[m\n")
-                continue
-            
-            anggota_baru['Nama Pelatih'] = input("Masukkan Nama Pelatih (alfabet): ")
-            anggota_baruC = anggota_baru['Nama Pelatih'].title()
-            
-            # Validasi nama pelatih yang sesuai di db_pelatih
-            if anggota_baruC not in [pelatih['Nama'] for pelatih in db_pelatih]:
-                print(f"\n\033[4mPelatih bernama {anggota_baruC} tidak ada. Cek Menu 7 di Menu Utama\033[m\n")
-                continue
-            
+                # Validasi jenis kelamin sesuai syntax
+                if jenis_kelamin_input == 'P' or jenis_kelamin_input == 'Pria':
+                    anggota_baru['Jenis Kelamin'] = 'Pria'
+                    break
+                elif jenis_kelamin_input == 'W' or jenis_kelamin_input == 'Wanita':
+                    anggota_baru['Jenis Kelamin'] = 'Wanita'
+                    break
+                else:
+                    print("\n\033[4mJenis Kelamin tidak valid. Harap masukkan Pria/P atau Wanita/W.\033[m\n")
+
+            while True:
+                anggota_baru['Berat'] = input("Masukkan Berat Badan (angka): ")
+                anggota_baru['Tinggi'] = input("Masukkan Tinggi Badan (angka): ")
+
+                
+                # Validasi berat dan tinggi integer
+                if anggota_baru['Berat'].isdigit() and anggota_baru['Tinggi'].isdigit():
+                    # Validasi berat dan tinggi realistis
+                    if 20 <= int(anggota_baru['Berat']) <= 600 and 50 <= int(anggota_baru['Tinggi']) <= 300:
+                        break
+                    else:
+                        print("\n\033[4mBerat dan Tinggi harus berada dalam rentang realistis.\033[m\n")
+                else:
+                    print("\n\033[4mBerat dan Tinggi harus berupa angka.\033[m\n")
+
+            while True:
+                anggota_baru['Nama Pelatih'] = input("Masukkan Nama Pelatih (alfabet): ").title()
+
+                # Validasi nama pelatih yang sesuai di db_pelatih
+                if anggota_baru['Nama Pelatih'] in [pelatih['Nama'] for pelatih in db_pelatih]:
+                    break
+                else:
+                    print(f"\n\033[4mPelatih bernama {anggota_baru['Nama Pelatih']} tidak ada. Cek Menu 7 di Menu Utama\033[m\n")
+
             anggota_baru['Tanggal Registrasi'] = date.today().strftime("%Y-%m-%d")
 
-            # Konfirmasi penyimpanan data
-            konfirmasi = input("\nApakah Anda yakin ingin menyimpan data anggota ini? (iya/tidak): ").lower()
-            
-            if konfirmasi == 'iya' or konfirmasi == 'y':
+            while True:
+                # Konfirmasi penyimpanan data
+                konfirmasi = input("\nApakah Anda yakin ingin menyimpan data anggota ini? (iya/tidak): ").lower()
+
+                if konfirmasi in ['iya', 'y','tidak','t']:
+                    break
+                else:
+                    print("\n\033[4mJawaban tidak valid. Harap masukkan iya/y atau tidak/t.\033[m\n")
+
+            if konfirmasi in ['iya', 'y']:
                 db.append(anggota_baru)
                 print("\n\033[4mData anggota baru berhasil ditambahkan.\033[m\n")
+                headers = "keys"
+                print(tabulate(db, headers=headers, showindex=True, tablefmt="grid"))
             else:
                 print("\n\033[4mData anggota baru tidak disimpan.\033[m\n")
             break
@@ -171,6 +205,7 @@ def tambah_anggota(db):
 
         else:
             print("\nMenu tidak valid. Silakan pilih lagi.\n")
+
 
 def ubah_anggota(db):
     while True:
@@ -233,7 +268,7 @@ def ubah_anggota(db):
                         existing_nama_pelatih = [pelatih['Nama'] for pelatih in db_pelatih]
                         nilai_baru = input(f"Masukkan nilai baru untuk kolom {kolom_ubah} (Cek menu 7 di menu utama): ")
 
-                        # Validate that the entered value exists in db_pelatih
+                        # Validasi apakah nama pelatih terdapat di db_pelatih
                         if nilai_baru not in existing_nama_pelatih:
                             print(f"\n\033[4mPelatih bernama {nilai_baru} tidak ada. Cek Menu 7 di Menu Utama\033[m\n")
                             return
@@ -262,7 +297,7 @@ def ubah_anggota(db):
             
                     if konfirmasi_ubah == 'iya' or konfirmasi_ubah == 'y':
                         anggota[kolom_ubah] = nilai_baru
-                        print("Data anggota berhasil diubah.")
+                        print("\n\033[4mData anggota berhasil diubah.\033[m\n")
                     else:
                         print("\n\033[4mPerubahan data anggota tidak disimpan.\033[m\n")
                     break
@@ -276,7 +311,6 @@ def ubah_anggota(db):
 
         else:
             print("\nMenu tidak valid. Silakan pilih lagi.\n")
-
 
 def hapus_anggota(db):
     while True:
@@ -300,14 +334,28 @@ def hapus_anggota(db):
             found = False
             for anggota in db:
                 if anggota['ID'] == id_anggota:
-                    db.remove(anggota)
-                    print(f"Data anggota berhasil dihapus:\n\n\033[4m{anggota}\033[m\n")
+                    # Menampilkan data yang akan dihapus
+                    print(f"Data anggota yang akan dihapus:\n")
+                    headers = [kolom for kolom in anggota.keys()]
+                    data = [[kolom, anggota[kolom]] for kolom in headers]
+                    print(tabulate(data, headers=['Kolom', 'Nilai'], tablefmt="grid"))
+
+                    # Konfirmasi penghapusan data
+                    konfirmasi_hapus = input("\nApakah Anda yakin ingin menghapus data anggota ini? (iya/tidak): ").lower()
+
+                    if konfirmasi_hapus == 'iya' or konfirmasi_hapus == 'y':
+                        deleted_ids.add(anggota['ID'])
+                        db.remove(anggota)
+                        print("\n\033[4mData anggota berhasil dihapus.\033[m\n")
+                    else:
+                        print("\n\033[4mPenghapusan data anggota dibatalkan.\033[m\n")
+
                     found = True
                     break
 
             if not found:
                 print("\n\033[4mData anggota tidak ditemukan.\033[m\n")
-            
+
             break
 
         elif ha_submenu_pilihan == '2':
@@ -349,9 +397,9 @@ def urutkan_anggota(db):
         if opsi_urut == '1' or opsi_urut == '2':
             temp = lambda x: x['Nama']
         elif opsi_urut == '3' or opsi_urut == '4':
-            temp = lambda x: x['Berat']
+            temp = lambda x: int(x['Berat'])
         elif opsi_urut == '5' or opsi_urut == '6':
-            temp = lambda x: x['Tinggi']
+            temp = lambda x: int(x['Tinggi'])
         elif opsi_urut == '7' or opsi_urut == '8':
             temp = lambda x: x['Tanggal Registrasi']
 
